@@ -52,6 +52,8 @@ class Config:
 
     # Path to the Mip-NeRF 360 dataset
     data_dir: str = "data/360_v2/garden"
+    # Path to the images
+    image_dir: str = "data/360_v2/garden/images"
     # Downsample factor for the dataset
     data_factor: int = 4
     # Directory to save results
@@ -188,7 +190,7 @@ class Config:
 
 
 def create_splats_with_optimizers(
-    parser: Parser,
+    dataset: Dataset,
     init_type: str = "sfm",
     init_num_pts: int = 100_000,
     init_extent: float = 3.0,
@@ -205,8 +207,8 @@ def create_splats_with_optimizers(
     world_size: int = 1,
 ) -> Tuple[torch.nn.ParameterDict, Dict[str, torch.optim.Optimizer]]:
     if init_type == "sfm":
-        points = torch.from_numpy(parser.points).float()
-        rgbs = torch.from_numpy(parser.points_rgb / 255.0).float()
+        points = torch.from_numpy(dataset.points).float()
+        rgbs = torch.from_numpy(dataset.points_rgb / 255.0).float()
     elif init_type == "random":
         points = init_extent * scene_scale * (torch.rand((init_num_pts, 3)) * 2 - 1)
         rgbs = torch.rand((init_num_pts, 3))
@@ -311,19 +313,26 @@ class Runner:
             test_every=cfg.test_every,
         )
         self.trainset = Dataset(
-            self.parser,
+            colmap_dir=cfg.data_dir,
+            image_dir=cfg.image_dir,
             split="train",
             patch_size=cfg.patch_size,
             load_depths=cfg.depth_loss,
+            factor=cfg.data_factor,
         )
-        self.valset = Dataset(self.parser, split="val")
+        self.valset = Dataset(
+            colmap_dir=cfg.data_dir,
+            image_dir=cfg.image_dir,
+            factor=cfg.data_factor,
+            split="val"
+        )
         self.scene_scale = self.parser.scene_scale * 1.1 * cfg.global_scale
         print("Scene scale:", self.scene_scale)
 
         # Model
         feature_dim = 32 if cfg.app_opt else None
         self.splats, self.optimizers = create_splats_with_optimizers(
-            self.parser,
+            self.trainset,
             init_type=cfg.init_type,
             init_num_pts=cfg.init_num_pts,
             init_extent=cfg.init_extent,
