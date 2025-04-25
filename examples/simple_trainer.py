@@ -53,7 +53,7 @@ class Config:
     # Path to the Mip-NeRF 360 dataset
     data_dir: str = "data/360_v2/garden"
     # Path to the images
-    image_dir: str = "data/360_v2/garden/images"
+    images_dir: str = "data/360_v2/garden/images"
     # Downsample factor for the dataset
     data_factor: int = 4
     # Directory to save results
@@ -314,17 +314,19 @@ class Runner:
         )
         self.trainset = Dataset(
             colmap_dir=cfg.data_dir,
-            image_dir=cfg.image_dir,
+            image_dir=cfg.images_dir,
             split="train",
+            normalize=cfg.normalize_world_space,
             patch_size=cfg.patch_size,
             load_depths=cfg.depth_loss,
             factor=cfg.data_factor,
         )
         self.valset = Dataset(
             colmap_dir=cfg.data_dir,
-            image_dir=cfg.image_dir,
+            image_dir=cfg.images_dir,
             factor=cfg.data_factor,
-            split="val"
+            split="val",
+            normalize=cfg.normalize_world_space
         )
         self.scene_scale = self.parser.scene_scale * 1.1 * cfg.global_scale
         print("Scene scale:", self.scene_scale)
@@ -511,6 +513,7 @@ class Runner:
         return render_colors, render_alphas, info
 
     def train(self):
+        print(f"Training using with {len(self.trainset)} images on {self.world_size} {self.device} GPUs.")
         cfg = self.cfg
         device = self.device
         world_rank = self.world_rank
@@ -873,7 +876,7 @@ class Runner:
     @torch.no_grad()
     def eval(self, step: int, stage: str = "val"):
         """Entry for evaluation."""
-        print("Running evaluation...")
+        print(f"Running evaluation on images index {self.valset.indices} ...")
         cfg = self.cfg
         device = self.device
         world_rank = self.world_rank
@@ -1127,7 +1130,7 @@ if __name__ == "__main__":
         ),
     }
     cfg = tyro.extras.overridable_config_cli(configs)
-    cfg.adjust_steps(cfg.steps_scaler)
+    cfg.adjust_steps(float(cfg.steps_scaler))
 
     # try import extra dependencies
     if cfg.compression == "png":
