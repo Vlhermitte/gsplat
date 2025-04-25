@@ -167,7 +167,7 @@ class Parser:
                 params = np.empty(0, dtype=np.float32)
                 camtype = "perspective"
             if type_ == CameraModelId.SIMPLE_RADIAL:
-                params = np.array([cam.params[4], 0.0, 0.0, 0.0], dtype=np.float32)
+                params = np.array([cam.params[3], 0.0, 0.0, 0.0], dtype=np.float32)
                 camtype = "perspective"
             elif type_ == CameraModelId.RADIAL:
                 params = np.array([cam.params[3], cam.params[4], 0.0, 0.0], dtype=np.float32)
@@ -549,7 +549,7 @@ class Dataset:
         elif type == CameraModelId.PINHOLE or type == "PINHOLE":
             return np.empty(0, dtype=np.float32)
         if type == CameraModelId.SIMPLE_RADIAL or type == "SIMPLE_RADIAL":
-            return np.array([camera.params[4], 0.0, 0.0, 0.0], dtype=np.float32)
+            return np.array([camera.params[3], 0.0, 0.0, 0.0], dtype=np.float32)
         elif type == CameraModelId.RADIAL or type == "RADIAL":
             return np.array([camera.params[3], camera.params[4], 0.0, 0.0], dtype=np.float32)
         elif type == CameraModelId.OPENCV or type == "OPENCV":
