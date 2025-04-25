@@ -457,17 +457,18 @@ class Dataset:
         if self.split != "train":
             self._fill_in_missing_poses()
 
-    def __getstate__(self):
-        st = self.__dict__.copy()
-        # drop the heavy C++ object
-        st.pop("colmap_model", None)
-        return st
-
-    def __setstate__(self, state):
-        # restore everything else
-        self.__dict__.update(state)
-        # lazily rebuild the Reconstruction in each worker
-        self._build_reconstruction()
+    # Disable pickling of the colmap model because of leaked semaphore
+    # def __getstate__(self):
+    #     st = self.__dict__.copy()
+    #     # drop the heavy C++ object
+    #     st.pop("colmap_model", None)
+    #     return st
+    #
+    # def __setstate__(self, state):
+    #     # restore everything else
+    #     self.__dict__.update(state)
+    #     # lazily rebuild the Reconstruction in each worker
+    #     self._build_reconstruction()
 
     def __len__(self):
         return len(self.indices)
