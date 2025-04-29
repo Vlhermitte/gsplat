@@ -426,7 +426,7 @@ class Dataset:
         self.points = np.array([p.xyz for p in points3D])
 
         # Normalize the world space.
-        if self.normalize and len(self.points) > 0:
+        if self.normalize:
             T1 = similarity_from_cameras(self.camtoworlds)
             self.camtoworlds = transform_cameras(T1, self.camtoworlds)
             self.points = transform_points(T1, self.points)
