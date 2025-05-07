@@ -101,6 +101,36 @@ def _find_closest_image(src_image: str, image_list: List[str]) -> str:
 
     return best_match
 
+def _select_biggest_model(colmap_dir):
+    # Find the model with the most registered images
+    sparse_dir = os.path.join(colmap_dir, "sparse")
+    if os.path.exists(sparse_dir):
+        model_dirs = [d for d in os.listdir(sparse_dir) if d.isdigit()]
+        if model_dirs:
+            max_images = -1
+            best_model = "0"  # Default to model 0
+            for model_dir in model_dirs:
+                model_path = os.path.join(sparse_dir, model_dir)
+                try:
+                    # Try to load the model and count registered images
+                    temp_model = Reconstruction(model_path)
+                    num_images = temp_model.num_images()
+                    print(f"Model {model_dir}: {num_images} registered images")
+                    if num_images > max_images:
+                        max_images = num_images
+                        best_model = model_dir
+                except Exception as e:
+                    print(f"Failed to load model {model_dir}: {e}")
+            colmap_dir = os.path.join(sparse_dir, best_model)
+            print(f"Selected model {best_model} with {max_images} registered images")
+        else:
+            # No numeric model directories found, use sparse dir as is
+            colmap_dir = sparse_dir
+    else:
+        # If sparse directory doesn't exist, use colmap_dir directly
+        colmap_dir = colmap_dir
+
+    return colmap_dir
 
 class Parser:
     """COLMAP parser."""
@@ -117,7 +147,8 @@ class Parser:
         self.normalize = normalize
         self.test_every = test_every
 
-        colmap_dir = os.path.join(data_dir, "sparse/0/")
+        # colmap_dir = os.path.join(data_dir, "sparse/0/")
+        colmap_dir = _select_biggest_model(data_dir)
         if not os.path.exists(colmap_dir):
             colmap_dir = os.path.join(data_dir, "sparse")
         assert os.path.exists(
@@ -396,7 +427,7 @@ class Dataset:
         if not os.path.exists(colmap_dir):
             raise ValueError(f"COLMAP directory {colmap_dir} does not exist.")
         self.colmap_model = None
-        self.colmap_dir = colmap_dir + "/sparse/0"
+        self.colmap_dir = _select_biggest_model(colmap_dir)
         self.image_dir = image_dir
         self.split = split
         self.patch_size = patch_size
